@@ -1,0 +1,37 @@
+unsigned int rd_count = 0; // number of readers reading
+semaphore rd_mutex;        // will make sure that only one reader at a time can change the readers count
+semaphore get_access;      // decides whether the readers or the writer will have access to critical section
+semaphore order;           // preserves the order of arrival for reader or writer
+void read(){
+    wait(order);            // it preserves the arrival's order
+    wait(rd_mutex);         // now it need to get access to the mutex to change readers count
+    
+    if(rd_count==0)
+        wait(get_access);    // If, this is the first reader, it needs to get the access mutex to avoid writers modifying the resources.
+    
+    
+    rd_count++;              // it needs to increase the readers count
+    signal(order);           // it needs to release the order semaphore 
+    signal(rd_mutex);       //  it needs to release reader semaphore for  other readers
+    
+    read_resource();        // reading of resource in the critical section
+    
+    wait(rd_mutex);         // now it needs to get the mutex to change readers count
+    rd_count--;
+    if(rd_count==0)
+        signal(get_access); // If, this is the last reader,then here it need to release the get_access semaphore
+    signal(rd_mutex);       // now it needs to release the rd_mutex semaphore as rd_count already updated
+    
+}
+
+void write(){
+
+    wait(order);          // it preserves the arrival's order
+    wait(get_accesss);    // it needs to get the access mutex to avoid readers while writing
+    signal(order);        // it needs to release the order semaphore
+    
+    write_resource();     // writing of resource takes place in the critical section
+    
+    signal(get_access);   // now it releases the access to the resource to allow other users to use it
+    
+}
